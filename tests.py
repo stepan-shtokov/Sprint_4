@@ -1,153 +1,86 @@
 import pytest
-from main import BooksCollector
 
 
 class TestBooksCollector:
 
-    @pytest.mark.parametrize("name", [
-        "Зов Ктулху",
-        "Python за 3 дня"
-    ])
-    def test_add_new_books_added(self, name):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        assert name in collector.books_genre
+    def test_add_new_book_add_three_books_added(self, books_collection):
+        books = ['Философский эксперимент', 'Водяной и его мечты', 'Римская империя']
+        for book in books:
+            books_collection.add_new_book(book)
+        assert len(books_collection.get_books_genre()) == 3
 
-    @pytest.mark.parametrize('name', [
-        'Чудесный костюм цвета шоколадного мороженого',
-        'Бойня номер пять, или Крестовый поход детей'
-    ])
-    def test_add_longname_books_not_added(self, name):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        assert name not in collector.books_genre
+    def test_add_new_book_have_no_genre(self, books_collection):
+        book_to_add = 'О скитаниях вечных и о земле'
+        books_collection.add_new_book(book_to_add)
+        assert books_collection.get_book_genre(book_to_add) == ''
 
-    def test_add_no_name_book_not_added(self):
-        collector = BooksCollector()
-        name = ''
-        collector.add_new_book(name)
-        assert name not in collector.books_genre
+    @pytest.mark.parametrize('book', ['', 'Мастер всего,мастер ничего,может все и ничего'])
+    def test_add_new_book_book_with_large_or_empty_name_not_added(self, book, books_collection):
+        books_collection.add_new_book(book)
+        assert len(books_collection.get_books_genre()) == 0
 
-    def test_new_book_have_no_genre(self):
-        collector = BooksCollector()
-        name = 'О скитаниях вечных и о земле'
-        collector.add_new_book(name)
-        assert collector.books_genre[name] == ''
+    def test_add_new_book_double_add_not_added(self, books_collection):
+        books = ['Книга обо всем', 'Книга обо всем']
+        for book in books:
+            books_collection.add_new_book(book)
+        assert len(books_collection.get_books_genre()) == 1
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Python за 3 дня', 'Фантастика'),
-        ('Зов Ктулху', 'Ужасы')
-    ])
-    def test_genre_set_genre_added(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        assert collector.books_genre[name] == genre
+    def test_set_book_genre_genre_added(self, books_collection):
+        book = 'Мгла'
+        genre = 'Ужасы'
+        books_collection.add_new_book(book)
+        books_collection.set_book_genre(book, genre)
+        assert books_collection.get_book_genre(book) == genre
 
-    def test_unreal_genre_set_genre_not_added(self):
-        collector = BooksCollector()
-        name = 'Невероятные приключения моей кошки'
-        genre = 'Биография'
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        assert collector.books_genre[name] == ''
+    def test_change_genre_genre_changed(self, books_collection):
+        book = 'Мгла'
+        initial_genre = 'Ужасы'
+        new_genre = 'Комедии'
+        books_collection.add_new_book(book)
+        books_collection.set_book_genre(book, initial_genre)
+        books_collection.set_book_genre(book, new_genre)
+        assert books_collection.get_book_genre(book) == new_genre
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Как стать богатым за 1 день', 'Фантастика'),
-        ('Попал под сокращение на работе', 'Ужасы')
-    ])
-    def test_get_genre_by_book_name(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        assert collector.get_book_genre(name) == genre
+    def test_set_book_genre_with_excluded_genre(self, books_collection):
+        book = 'Мой кот и его жизнь'
+        excluded_genre = 'Жизнеописание'
+        books_collection.add_new_book(book)
+        books_collection.set_book_genre(book, excluded_genre)
+        assert books_collection.get_book_genre(book) == ''
 
-    def test_non_dict_book_has_no_genre(self):
-        collector = BooksCollector()
-        assert collector.get_book_genre('Взломал Яндекс.Практикум') is None
+    def test_get_book_with_specific_genre_genre_specified(self, books_collection_5_books):
+        assert books_collection_5_books.get_books_with_specific_genre('Ужасы') == ['Мгла']
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Python за 3 дня', 'Фантастика'),
-        ('Зов Ктулху', 'Ужасы'),
-        ('Не сдал проект Яндекса', 'Ужасы')
-    ])
-    def test_get_books_by_genre(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        books_with_genre = collector.get_books_with_specific_genre('Ужасы')
-        assert 'Зов Ктулху', 'Не сдал проект Яндекса' in books_with_genre
+    def test_get_book_with_wrong_genre_no_such_book(self, books_collection_5_books):
+        assert len(books_collection_5_books.get_books_with_specific_genre('Адвенчура')) == 0
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Python за 3 дня', 'Фантастика'),
-        ('Зов Ктулху', 'Ужасы'),
-        ('Не сдал проект Яндекса', 'Ужасы')
-    ])
-    def test_no_books_by_unused_genre(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        books_with_genre = collector.get_books_with_specific_genre('Детективы')
-        assert books_with_genre == []
+    def test_get_books_for_children_no_age_restricted_books(self, books_collection_5_books):
+        books_for_children = books_collection_5_books.get_books_for_children()
+        assert len(books_for_children) == 3 and books_for_children == ['Волшебство в Python', 'Основание', 'Гарри Поттер в QA']
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Выучил Python', 'Фантастика'),
-        ('Зов военкомата', 'Ужасы'),
-        ('Сдал проект Яндекса', 'Детективы')
-    ])
-    def test_get_book_genre_dict(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        assert isinstance(collector.get_books_genre(), dict)
+    def test_add_book_in_favorites_added_one_book(self, books_collection):
+        book = '12 Rules for Life.An Antidote to chaos'
+        books_collection.add_new_book(book)
+        books_collection.add_book_in_favorites(book)
+        favorite_books = books_collection.get_list_of_favorites_books()
+        assert len(favorite_books) == 1 and favorite_books[0] == book
 
-    @pytest.mark.parametrize('name, genre', [
-        ('Получил золотую медаль', 'Фантастика'),
-        ('Зов военкомата', 'Ужасы'),
-        ('Поступление на бюджет', 'Комедии')
-    ])
-    def test_no_age_restricted_books_for_kids(self, name, genre):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.set_book_genre(name, genre)
-        books_for_children = collector.get_books_for_children()
-        assert 'Зов военкомата' not in books_for_children
+    def test_add_book_in_favorites_twice_not_added(self, books_collection):
+        book = '12 Rules for Life.An Antidote to chaos'
+        books_collection.add_new_book(book)
+        books_collection.add_book_in_favorites(book)
+        books_collection.add_book_in_favorites(book)
+        favorite_books = books_collection.get_list_of_favorites_books()
+        assert len(favorite_books) == 1 and favorite_books[0] == book
 
-    def test_add_book_to_favorites(self):
-        collector = BooksCollector()
-        name = 'Как я получил диплом Яндекса'
-        collector.add_new_book(name)
-        collector.add_book_in_favorites(name)
-        assert name in collector.favorites
+    def test_add_book_in_favorites_add_non_dict_book_not_added(self, books_collection):
+        book = 'Beyond Order'
+        books_collection.add_book_in_favorites(book)
+        assert len(books_collection.get_list_of_favorites_books()) == 0
 
-    def test_add_non_dict_book_to_favorites_not_added(self):
-        collector = BooksCollector()
-        name = 'Как я не получил диплом Яндекса'
-        collector.add_book_in_favorites(name)
-        assert collector.favorites == []
-
-    def test_add_book_twice_without_delete(self):
-        collector = BooksCollector()
-        name = 'Как я получил диплом Яндекса'
-        collector.add_new_book(name)
-        collector.add_book_in_favorites(name)
-        assert name in collector.favorites
-
-    def test_delete_book_from_favorites(self):
-        collector = BooksCollector()
-        name = 'Как я получил диплом Яндекса'
-        collector.add_new_book(name)
-        collector.add_book_in_favorites(name)
-        collector.delete_book_from_favorites(name)
-        assert name not in collector.favorites
-
-    @pytest.mark.parametrize("name", [
-        "Стал тестировщиком",
-        "Как получить диплом Яндекса"
-    ])
-    def test_get_list_of_favorites_books(self, name):
-        collector = BooksCollector()
-        collector.add_new_book(name)
-        collector.add_book_in_favorites(name)
-        favorite_books = collector.get_list_of_favorites_books()
-        assert name in favorite_books
+    def test_delete_book_from_favorites_book_is_deleted(self, books_collection):
+        book = 'Delete me easily'
+        books_collection.add_new_book(book)
+        books_collection.add_book_in_favorites(book)
+        books_collection.delete_book_from_favorites(book)
+        assert len(books_collection.get_list_of_favorites_books()) == 0
